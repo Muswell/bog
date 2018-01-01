@@ -12,7 +12,7 @@ import (
 
 // PostgreSQL implementation of ClientService
 type PostgresClientService struct {
-	DB *sql.DB
+	DB func() (*sql.DB, error)
 }
 
 // PostgreSQL implementation of ContactService
@@ -23,20 +23,17 @@ type PostgresContactService struct {
 func init() {
 	log.Println("Running postgres-service init")
 	NewClientService = func() ClientService {
-		s := PostgresClientService{}
-		db, err := database.New()
-
-		if err != nil {
-			log.Fatalf("Could not initialixe PostgresClientService: %v", err)
+		s := PostgresClientService{
+			DB: database.New,
 		}
-		s.DB = db
 
 		return &s
 	}
 
 	NewContactService = func() ContactService {
-		s := PostgresContactService{}
-		s.DB = database.New
+		s := PostgresContactService{
+			DB: database.New,
+		}
 
 		return &s
 	}
@@ -55,8 +52,10 @@ func (s *PostgresClientService) Get(id uint) (Client, error) {
 		return c, fmt.Errorf("PostgresClientService.Get requires a valid id.")
 	}
 
-	db := s.DB
-
+	db, err := s.DB()
+	if err != nil {
+		return c, err
+	}
 	defer db.Close()
 
 	row := db.QueryRow("SELECT id, name, address_1, address_2, city, state, zip FROM clients WHERE id = $1", id)
@@ -68,7 +67,7 @@ func (s *PostgresClientService) Get(id uint) (Client, error) {
 	var state string
 	var zip string
 
-	err := row.Scan(&id, &name, &address1, &address2, &city, &state, &zip)
+	err = row.Scan(&id, &name, &address1, &address2, &city, &state, &zip)
 	if err != nil {
 		return c, err
 	}
@@ -88,7 +87,13 @@ func (s *PostgresClientService) Get(id uint) (Client, error) {
 func (s *PostgresClientService) GetAll() ([]Client, error) {
 	clients := []Client{}
 
-	rows, err := s.DB.Query("SELECT id, name, address_1, address_2, city, state, zip FROM clients")
+	db, err := s.DB()
+	if err != nil {
+		return clients, err
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT id, name, address_1, address_2, city, state, zip FROM clients")
 
 	if err != nil {
 		return clients, err
@@ -133,7 +138,14 @@ func (s *PostgresClientService) Insert(c *Client) error {
 	}
 
 	var id uint
-	err := s.DB.QueryRow(
+
+	db, err := s.DB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	err = db.QueryRow(
 		"INSERT INTO clients (name, address_1, address_2, city, state, zip) "+
 			"VALUES($1, $2, $3, $4, $5, $6) RETURNING id",
 		c.Name,
@@ -158,7 +170,13 @@ func (s *PostgresClientService) Update(c *Client) error {
 		return fmt.Errorf("Cannot update a client which has not been inserted.")
 	}
 
-	_, err := s.DB.Exec(
+	db, err := s.DB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	_, err = db.Exec(
 		"UPDATE clients set name = $1, address_1 = $2, address_2 = $3, city = $4, state = $5, zip = $6 WHERE id = $7",
 		c.Name,
 		c.Address1,
@@ -178,7 +196,13 @@ func (s *PostgresClientService) Update(c *Client) error {
 
 // Remove a client from the clients table
 func (s *PostgresClientService) Delete(id uint) error {
-	_, err := s.DB.Exec("DELETE FROM clients WHERE id = $1", id)
+	db, err := s.DB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	_, err = db.Exec("DELETE FROM clients WHERE id = $1", id)
 
 	if err == nil {
 		log.Printf("Client deleted name: id: %d", id)
