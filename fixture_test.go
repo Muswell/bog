@@ -1,3 +1,5 @@
+// +build postgres_service
+
 package bog
 
 import (
