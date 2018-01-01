@@ -47,7 +47,7 @@ func NewClient() Client {
 	return c
 }
 
-func LoadClient(id uint) (Client, error) {
+func GetClient(id uint) (Client, error) {
 	service := NewClientService()
 
 	if id == 0 {
@@ -55,6 +55,12 @@ func LoadClient(id uint) (Client, error) {
 	}
 
 	return service.Get(id)
+}
+
+func GetAllClients() ([]Client, error) {
+	service := NewClientService()
+
+	return service.GetAll()
 }
 
 // Client.Insert inserts the client.

@@ -22,7 +22,7 @@ func TestClientCrud(t *testing.T) {
 		t.Error("Client insert failed: ID = 0")
 	}
 
-	c2, err := LoadClient(c.ID)
+	c2, err := GetClient(c.ID)
 
 	if err != nil {
 		t.Errorf("Failed to load client: %v", err)
@@ -64,7 +64,7 @@ func TestClientCrud(t *testing.T) {
 		t.Errorf("Failed to update client: %v", err)
 	}
 
-	c2, err = LoadClient(c.ID)
+	c2, err = GetClient(c.ID)
 
 	if err != nil {
 		t.Errorf("Failed to load client: %v", err)
@@ -80,9 +80,44 @@ func TestClientCrud(t *testing.T) {
 		t.Errorf("Failed to delete client: %v", err)
 	}
 
-	_, err = LoadClient(c2.ID)
+	_, err = GetClient(c2.ID)
 
 	if err == nil {
 		t.Errorf("Delete client failed expected error when loading")
+	}
+}
+
+func TestGetAllClients(t *testing.T) {
+	c1 := NewClient()
+	c1.Name = "Test Client 1"
+	err := c1.Insert()
+	if err != nil {
+		t.Errorf("Could not insert client %v", err)
+	}
+
+	c2 := NewClient()
+	c2.Name = "Test Client 2"
+	err = c2.Insert()
+	if err != nil {
+		t.Errorf("Could not insert client %v", err)
+	}
+
+	clients, err := GetAllClients()
+
+	if err != nil {
+		t.Errorf("Could not load clients %v", err)
+	}
+
+	if len(clients) != 2 {
+		t.Errorf("LoadAllClients failed count expected: 2 count received: %d", len(clients))
+	}
+
+	err = c1.Delete()
+	if err != nil {
+		t.Errorf("Could not delete client %v", err)
+	}
+	err = c2.Delete()
+	if err != nil {
+		t.Errorf("Could not delete client %v", err)
 	}
 }

@@ -16,7 +16,6 @@ import (
 func init() {
 	log.Println("Running postgres_service DB init")
 	New = func() (*sql.DB, error) {
-		log.Println("dbName: " + dbName)
 		return sql.Open("postgres", "postgres://"+dbHost+"/"+dbName+"?user="+dbUser+"&password="+dbPass)
 	}
 

@@ -48,14 +48,36 @@ func NewContact() Contact {
 }
 
 // Get a Contact instance matching id
-func LoadContact(id uint) (Contact, error) {
-	service := NewContactService()
-
+func GetContact(id uint) (Contact, error) {
 	if id == 0 {
 		return Contact{}, fmt.Errorf("Cannot load contact: id = 0")
 	}
 
+	service := NewContactService()
+
 	return service.Get(id)
+}
+
+// Get all contacts for a client
+func GetClientContacts(clientId uint) ([]Contact, error) {
+	if clientId == 0 {
+		return make([]Contact, 0), fmt.Errorf("GetClientContacts requires a valid clientId")
+	}
+
+	service := NewContactService()
+
+	return service.GetAll(clientId)
+}
+
+// Get primary contact for a client
+func GetPrimaryContact(clientId uint) (Contact, error) {
+	if clientId == 0 {
+		return Contact{}, fmt.Errorf("GetPrimaryContact requires a valid clientId")
+	}
+
+	service := NewContactService()
+
+	return service.GetPrimary(clientId)
 }
 
 // Contact.Insert inserts the contact.
